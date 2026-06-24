@@ -1,0 +1,26 @@
+# ── 临时 / 构建产物 ──
+__pycache__/
+*.pyc
+*.pyo
+build/
+dist/
+*.exe
+!bin/dws.exe
+!bin/python-sidecar.exe
+deliver/dingtalk_box.zip
+
+# ── 本地配置（敏感信息，不入 git）──
+.env
+.env.local
+*.local
+
+# ── 运行时日志 ──
+*.log
+launcher_dev.log
+
+# ── dws 移植参考（开发期对比用，不入 git）──
+*.go
+
+# ── 项目内重复目录（已被 .claude/projects/dingtalk_box/ 取代）──
+memory/
+knowledge/

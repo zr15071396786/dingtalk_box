@@ -1,0 +1,83 @@
+version: 2
+
+# 10 家厂商 × 1-3 个 2026 最新热门模型
+# 用户选择厂商 + 模型 + 输入 API Key → 后台用 base_url + 预设模型
+
+providers:
+  - id: openai
+    name: "OpenAI"
+    base_url: "https://api.openai.com/v1"
+    models:
+      - { id: "gpt-chat-latest",   name: "GPT-5.5 Instant（GPT-chat-latest）" }
+      - { id: "gpt-5-pro",         name: "GPT-5 Pro（中端生产主力）" }
+      - { id: "gpt-5.4-mini",      name: "GPT-5.4 mini（轻量备用）" }
+
+  - id: deepseek
+    name: "DeepSeek（深度求索）"
+    base_url: "https://api.deepseek.com/v1"
+    models:
+      - { id: "deepseek-v4-pro",   name: "DeepSeek-V4-Pro（旗舰 MoE）" }
+      - { id: "deepseek-v4-flash", name: "DeepSeek-V4-Flash（轻量高速）" }
+
+  - id: moonshot
+    name: "Moonshot 月之暗面（Kimi）"
+    base_url: "https://api.moonshot.cn/v1"
+    models:
+      - { id: "kimi-k2-6",         name: "Kimi K2.6（Agent 长任务旗舰）" }
+      - { id: "kimi-k2-instruct",  name: "Kimi K2-Instruct（开源 MoE）" }
+
+  - id: zhipu_glm
+    name: "智谱 AI（GLM）"
+    base_url: "https://open.bigmodel.cn/api/paas/v4"
+    models:
+      - { id: "glm-5.1",           name: "GLM-5.1（代码 / 工程旗舰）" }
+      - { id: "glm-4-plus",        name: "GLM-4-Plus（商用主力）" }
+      - { id: "glm-4.7",           name: "GLM-4.7（开源 MoE 200K）" }
+
+  - id: aliyun_dashscope
+    name: "阿里百炼 DashScope（通义 Qwen）"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    models:
+      - { id: "qwen3.5-flash",     name: "Qwen3.5-Flash（极速便宜 · 默认）" }
+      - { id: "qwen3.6-flash",     name: "Qwen3.6-Flash（增强版极速）" }
+      - { id: "qwen3.6-plus",      name: "Qwen3.6-Plus（增强版）" }
+      - { id: "qwen3.7-plus",      name: "Qwen3.7-Plus（通用主力）" }
+      - { id: "qwen3.7-max",       name: "Qwen3.7-Max（全栈 Agent 旗舰）" }
+      - { id: "qwen-long",         name: "Qwen-Long（百万上下文）" }
+
+  - id: volcengine_doubao
+    name: "字节豆包 Volcengine"
+    base_url: "https://ark.cn-beijing.volces.com/api/v3"
+    models:
+      - { id: "doubao-seed-2-0-pro",   name: "豆包 2.0 Pro（Seed 2.0 Pro）" }
+      - { id: "doubao-seed-2-0-lite",  name: "豆包 2.0 Lite（性价比）" }
+      - { id: "doubao-seed-2-0-code",  name: "Doubao-Seed-2.0-Code（代码）" }
+
+  - id: xunfei_spark
+    name: "科大讯飞（星火）"
+    base_url: "https://spark-api-open.xf-yun.com/v1"
+    models:
+      - { id: "x1",        name: "星火 X1（深度推理）" }
+      - { id: "x1.5",      name: "星火 4.0 Ultra（X1.5 通用旗舰）" }
+
+  - id: MiniMax
+    name: "MiniMax"
+    base_url: "https://api.MiniMax.chat/v1"
+    models:
+      - { id: "MiniMax-M2",   name: "MiniMax M2（商用稳定版）" }
+
+  - id: baidu_qianfan
+    name: "百度千帆（文心）"
+    base_url: "https://qianfan.baidubce.com/v2"
+    models:
+      - { id: "ernie-5.1",          name: "文心 5.1（全模态旗舰）" }
+      - { id: "ernie-4.0-turbo",    name: "文心一言 4.0 Turbo（商用稳定）" }
+
+  - id: xiaomi_mimo
+    name: "小米 MiMo"
+    base_url: "https://api.xiaomimimo.com/v1"
+    note: "按量付费（sk- 前缀密钥）。海外节点/订阅套餐（tp- 前缀）请自改 URL：token-plan-cn / token-plan-sgp / token-plan-ams"
+    models:
+      - { id: "MiMo-v2-pro",        name: "MiMo-V2-Pro（旗舰 1M 上下文）" }
+      - { id: "MiMo-v2-omni",       name: "MiMo-V2-Omni（多模态）" }
+      - { id: "MiMo-v2.5-pro",      name: "MiMo V2.5 Pro（开源推理）" }

@@ -1,0 +1,10 @@
+pyyaml>=6.0
+Pillow>=10.0
+pywebview>=5.0
+pyinstaller>=6.0
+# v0.3.9 安全加固：内置 Qwen key 加密（等级 2：Argon2id + AES-256-GCM，PyInstaller 打包）
+argon2-cffi>=21.3.0
+cryptography>=41.0.0
+# macOS 端口（S1）：Mac 端用 Keychain 保护用户 LLM key（keyring 库 + macOS 后端）
+# Windows 端不会 import 它（dpapi.py 平台分发），但装上无副作用
+keyring>=24.0

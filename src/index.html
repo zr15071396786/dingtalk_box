@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>钉钉AI助手</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- =================== Sidebar =================== -->
+    <aside class="sidebar">
+      <!-- Brand -->
+      <div class="brand">
+        <div class="brand-logo">
+          <img src="../assets/logo.ico" alt="钉钉AI助手" class="brand-logo-img" />
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">钉钉AI助手</div>
+          <div class="brand-subtitle">AI 助手 · 智能办公</div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <nav class="nav">
+        <a class="nav-item active" data-tab="daily" href="#daily">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+          </svg>
+          <span>AI日报</span>
+        </a>
+      </nav>
+
+      <!-- AI Assistant mini card (decorative) -->
+      <div class="ai-mini-card">
+        <div class="ai-mini-robot">
+          <img src="../assets/robot-mini.png" alt="AI 助手" class="ai-mini-robot-img floating" />
+        </div>
+        <div class="ai-mini-text">
+          <div class="ai-mini-title">AI 助手</div>
+          <div class="ai-mini-sub">随时为你服务</div>
+        </div>
+        <svg class="ai-mini-spark" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <path d="M12 2 L13.5 8.5 L20 10 L13.5 11.5 L12 18 L10.5 11.5 L4 10 L10.5 8.5 Z"/>
+        </svg>
+      </div>
+    </aside>
+
+    <!-- =================== Main =================== -->
+    <main class="main">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-spacer"></div>
+        <div class="topbar-actions">
+          <!-- v0.3.7：合并图标 + 徽章 → 单一可点击按钮（未配置显示"未绑定模型"） -->
+          <button id="topbar-model-btn" class="topbar-model-badge unbound" type="button">
+            未绑定模型
+          </button>
+          <button id="btn-avatar" class="topbar-btn icon-only avatar-btn" title="当前账号">
+            <!-- 紫圈 user -->
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="10" r="3.2"/>
+              <path d="M6.5 18.2 c1.2 -2.4 3.4 -3.7 5.5 -3.7 s4.3 1.3 5.5 3.7"/>
+            </svg>
+          </button>
+          <!-- v0.3.9：点头像弹出的 popover —— 账号信息 + 动态按钮（登录态显示「退出登录」，未登录显示「登录账号」） -->
+          <div id="avatar-popover" class="avatar-popover hidden">
+            <div class="avatar-popover-header">
+              <div class="avatar-popover-name" id="avatar-popover-name">—</div>
+              <div class="avatar-popover-corp" id="avatar-popover-corp">—</div>
+            </div>
+            <div class="avatar-popover-divider"></div>
+            <button id="avatar-action-btn" class="avatar-popover-action" type="button" data-mode="login">
+              <svg id="avatar-action-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              <span id="avatar-action-label">登录账号</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Welcome Hero -->
+      <section class="hero">
+        <div class="hero-content">
+          <div class="hero-avatar" id="hero-avatar">
+            <span class="hero-avatar-fallback" id="hero-avatar-fallback">👤</span>
+          </div>
+          <div class="hero-info">
+            <div class="hero-greeting">
+              你好！<span id="hero-name">***</span> <span class="hero-wave">👋</span>
+            </div>
+            <div class="hero-corp" id="hero-corp">—</div>
+            <div class="hero-status">
+              <span class="status-tag status-success" id="hero-status">已登录</span>
+            </div>
+          </div>
+          <div class="hero-welcome" id="hero-date">今天是 —，准备生成你的日报吧~</div>
+        </div>
+        <div class="hero-robot-wrap">
+          <div class="hero-bubbles">
+            <div class="hero-bubble">今天心情如何?</div>
+            <div class="hero-bubble">需要我帮你生成日报吗?</div>
+          </div>
+          <div class="hero-robot">
+            <img src="../assets/robot-hero.png" alt="AI 助手" class="hero-robot-img floating" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Two-column content area -->
+      <div class="content-grid">
+        <!-- ============ Left: 生成日报 ============ -->
+        <div class="content-col">
+          <div class="card ai-action-card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="9" y1="13" x2="15" y2="13"/>
+                  <line x1="9" y1="17" x2="15" y2="17"/>
+                </svg>
+                生成日报
+                <span class="card-subtitle-sparkle">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                    <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+                  </svg>
+                  AI 助手为你智能分析
+                </span>
+              </h2>
+            </div>
+            <div class="card-body">
+              <div id="login-banner" class="banner hidden"></div>
+              <div id="corp-banner" class="banner hidden"></div>
+
+              <div class="form-row form-row-inline">
+                <label for="date-input">统计日期</label>
+                <div class="date-input-wrap">
+                  <input type="date" id="date-input" />
+                  <button type="button" class="date-display" id="date-display" aria-label="选择日期">
+                    <span class="date-display-text" id="date-display-text">2026/06/19</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p class="hint">📤 钉钉日报生成后将自动发送到你的钉盘和钉钉消息</p>
+              <button id="btn-generate" class="btn-ai-primary">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                  <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+                </svg>
+                <span class="btn-text">生成今日日报</span>
+              </button>
+
+              <div id="login-action" class="hidden">
+                <button id="btn-login" class="btn-primary">
+                  🔑 <span>登录钉钉</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 进度卡 -->
+          <div id="progress-card" class="card hidden">
+            <div class="progress-title">
+              <svg class="progress-title-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="progress-title-text">生成 <span id="progress-date">—</span> 日报</span>
+              <span id="progress-elapsed" class="elapsed">已耗时 0s</span>
+            </div>
+            <ul class="stages" id="stages">
+              <li class="stage-item" data-stage="fetching_chats">
+                <div class="stage-node">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </div>
+                <div class="stage-label">拉取钉钉消息</div>
+                <div class="stage-status">待开始</div>
+              </li>
+              <li class="stage-item" data-stage="ai_summarize">
+                <div class="stage-node">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div class="stage-label">AI 分析工作内容</div>
+                <div class="stage-status">待开始</div>
+              </li>
+              <li class="stage-item" data-stage="render_png">
+                <div class="stage-node">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                </div>
+                <div class="stage-label">生成日报图片</div>
+                <div class="stage-status">待开始</div>
+              </li>
+              <li class="stage-item" data-stage="render_md">
+                <div class="stage-node">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="9" y1="17" x2="15" y2="17"/>
+                  </svg>
+                </div>
+                <div class="stage-label">生成日报文档</div>
+                <div class="stage-status">待开始</div>
+              </li>
+              <li class="stage-item" data-stage="done">
+                <div class="stage-node">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </div>
+                <div class="stage-label">发送钉钉消息</div>
+                <div class="stage-status">待开始</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 报告卡 -->
+          <div id="report-card" class="card hidden">
+            <h2 class="report-card-title">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+                <path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>
+              </svg>
+              今日日报
+            </h2>
+            <div class="file-list" id="report-file-list">
+              <div class="file-row" data-kind="png">
+                <label class="file-row-select">
+                  <input type="checkbox" class="file-check" data-kind="png" checked />
+                  <div class="file-meta">
+                    <div class="file-name" id="report-png-name">—</div>
+                    <div class="file-size" id="report-png-size">—</div>
+                    <div class="file-send-status" id="report-png-send-status"></div>
+                  </div>
+                </label>
+                <div class="file-actions">
+                  <button id="btn-view-png" class="btn-ghost" title="预览 PNG 长图">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    预览
+                  </button>
+                  <button id="btn-open-output" class="btn-ghost" title="打开 PNG 所在文件夹">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    打开文件夹
+                  </button>
+                </div>
+              </div>
+              <div class="file-row" data-kind="md">
+                <label class="file-row-select">
+                  <input type="checkbox" class="file-check" data-kind="md" />
+                  <div class="file-meta">
+                    <div class="file-name" id="report-md-name">—</div>
+                    <div class="file-size" id="report-md-size">—</div>
+                    <div class="file-send-status" id="report-md-send-status"></div>
+                  </div>
+                </label>
+                <div class="file-actions">
+                  <button id="btn-view-md" class="btn-ghost" title="预览 Markdown">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    预览
+                  </button>
+                  <button id="btn-open-md-dir" class="btn-ghost" title="打开 Markdown 所在文件夹">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    打开文件夹
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="file-list-footer">
+              <div class="select-info">
+                <label class="check-all-wrap">
+                  <input type="checkbox" id="report-check-all" />
+                  <span>全选</span>
+                </label>
+                <span id="report-select-count" class="select-count">已选 0 个</span>
+              </div>
+              <div class="file-list-actions">
+                <button id="btn-send" class="btn-ai-primary" title="把勾选的文件发给当前登录钉钉账号">发送钉钉</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 错误卡（v0.3.10：标题改成「系统报错」+ 跟【历史日报】同样的 .card-header/.card-title 格式
+               + alert-triangle svg 图标；去掉详情 details；去掉重试/诊断按钮） -->
+          <div id="error-card" class="card error hidden">
+            <div class="card-header">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                系统报错
+              </h2>
+            </div>
+            <div class="error-msg" id="error-msg"></div>
+          </div>
+        </div>
+
+        <!-- ============ Right: 历史日报 ============ -->
+        <div class="content-col">
+          <div class="card history-card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                历史日报
+              </h2>
+            </div>
+            <div class="card-body">
+              <ul class="history-list" id="history-list">
+                <li class="history-row empty">暂无历史日报</li>
+              </ul>
+              <div class="history-more hidden" id="history-more">
+                <button id="btn-history-more" class="btn-ghost">查看更多 ↓</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <footer class="statusbar">
+        <span id="status-bar">就绪</span>
+        <span id="version-tag" class="version">v?</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- =================== Date Picker Modal =================== -->
+  <div id="date-modal" class="modal date-modal hidden">
+    <div class="date-modal-content">
+      <div class="date-modal-header">
+        <button type="button" class="date-nav" id="date-prev-year" title="上一年">«</button>
+        <button type="button" class="date-nav" id="date-prev-month" title="上一月">‹</button>
+        <span class="date-title" id="date-title">2026年06月</span>
+        <button type="button" class="date-nav" id="date-next-month" title="下一月">›</button>
+        <button type="button" class="date-nav" id="date-next-year" title="下一年">»</button>
+      </div>
+      <div class="date-weekdays">
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span class="weekend">六</span><span class="weekend">日</span>
+      </div>
+      <div class="date-grid" id="date-grid"></div>
+      <div class="date-modal-footer">
+        <button type="button" class="date-btn-text" id="date-clear">清除</button>
+        <button type="button" class="date-btn-text" id="date-today">今天</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================== Modals =================== -->
+
+  <!-- 登录弹窗（v0.3.10：弹窗即启动，无前置按钮） -->
+  <div id="login-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">
+        <span id="login-title">📱 钉钉登录</span>
+        <button class="close" id="btn-close-login" title="关闭">✕</button>
+      </div>
+      <p class="login-desc" id="login-desc">
+        已在<b>系统浏览器</b>中打开钉钉授权页。<br>
+        请用<b>手机钉钉</b>扫描浏览器里的二维码完成登录。
+      </p>
+      <div class="login-browser-prompt" id="login-browser-prompt">
+        <img src="../assets/robot-mini.png" alt="AI 助手" class="browser-icon floating" />
+        <p class="browser-hint" id="login-browser-hint">等待浏览器中完成授权<span id="login-hint-dots"></span></p>
+      </div>
+      <div class="modal-actions">
+        <button id="btn-cancel-login" class="btn-ghost">取消登录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- dws 安装引导 -->
+  <div id="dws-install-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">📦 首次使用：安装 dws</div>
+      <p>本机未检测到 <b>dws</b>（钉钉 CLI 工具），无法拉取聊天记录。</p>
+      <p>工具已内嵌 dws，点下方按钮一键安装到：</p>
+      <p><code id="dws-install-target">—</code></p>
+      <p class="hint" id="dws-install-hint">检测中…</p>
+      <div class="modal-actions">
+        <button id="btn-dws-install-skip" class="btn-ghost">稍后再说（禁用相关功能）</button>
+        <button id="btn-dws-install" class="btn-primary">一键安装</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- corp 防护页 -->
+  <div id="corp-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">✕ corp 不匹配</div>
+      <p>本工具仅供 <b id="corp-expected-name">—</b>（<code id="corp-expected-id">—</code>）使用</p>
+      <p>您当前登录的 corp：<b id="corp-actual-name">—</b>（<code id="corp-actual">—</code>）</p>
+      <p id="corp-hint">请切换到本公司钉钉账号后重试</p>
+      <div class="modal-actions">
+        <button id="btn-corp-relogin" class="btn-primary">🔄 重新登录（切其他账号）</button>
+        <button id="btn-exit" class="btn-ghost">退出工具</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发送确认 -->
+  <div id="send-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">确认发送</div>
+      <div id="send-files-list"></div>
+      <p>收件人：<span id="send-recipient">自己（自动识别当前登录）</span></p>
+      <div class="modal-actions">
+        <button id="btn-send-cancel" class="btn-ghost">取消</button>
+        <button id="btn-send-confirm" class="btn-primary">确认发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI 模型配置 -->
+  <div id="llm-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">
+        AI 模型配置
+        <button class="close" id="btn-close-llm">✕</button>
+      </div>
+      <div class="form-row">
+        <label for="llm-provider">厂商</label>
+        <select id="llm-provider"></select>
+      </div>
+      <div class="form-row">
+        <label for="llm-model">模型</label>
+        <select id="llm-model"></select>
+      </div>
+      <div class="form-row">
+        <label for="llm-key">API Key</label>
+        <div class="key-row">
+          <input type="password" id="llm-key" autocomplete="off" placeholder="" />
+          <button id="btn-toggle-key" type="button" class="btn-ghost btn-toggle">显示</button>
+        </div>
+      </div>
+      <div class="form-row hint" id="llm-hint">
+        请在对应厂商控制台申请 API Key 后粘贴到上方。
+      </div>
+      <div class="modal-actions">
+        <button id="btn-clear-llm" class="btn-danger">清除配置</button>
+        <button id="btn-save-llm" class="btn-primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- 自定义确认弹窗（替代浏览器原生 confirm） -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-box confirm-box">
+      <div class="modal-title" id="confirm-title">确认操作</div>
+      <div class="confirm-message" id="confirm-message"></div>
+      <div class="modal-actions">
+        <button id="btn-confirm-cancel" class="btn-ghost">取消</button>
+        <button id="btn-confirm-ok" class="btn-primary">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="preview-modal" class="modal hidden">
+    <div class="modal-box preview-box">
+      <div class="modal-title">
+        <span id="preview-title">预览</span>
+      </div>
+      <div id="preview-body" class="preview-body"></div>
+    </div>
+  </div>
+
+  <script src="vendor/markdown-it.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
+  <script src="qrcode.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
