@@ -9,6 +9,15 @@ dist/
 !bin/python-sidecar.exe
 deliver/dingtalk_box.zip
 
+# macOS 端口（S3）构建产物
+deliver/dingtalk_box_mac/dingtalk_box.app/
+deliver/dingtalk_box_mac/sidecar
+deliver/dingtalk_box_mac/ai_bridge
+stage-arm64/
+stage-x86_64/
+assets/logo.icns          # CI 用 sips 生成，不入库
+assets/logo.iconset/      # ico -> icns 中间产物
+
 # ── 本地配置（敏感信息，不入 git）──
 .env
 .env.local

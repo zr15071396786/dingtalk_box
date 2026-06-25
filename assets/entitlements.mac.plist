@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      S3 macOS 端口 entitlements
+
+      v0.3.15 ad-hoc 签名 + hardened runtime 下，pywebview cocoa 平台
+      动态加载 WebKit 框架必须有这条（不带就 first launch webview.start() 崩）
+    -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- 出站网络：DWS（首次启动 install_dws 下载）、DashScope API、GitHub release -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!--
+      Sandbox 写文件（ad-hoc 签名下不强制生效，但写明不报错）：
+      - 用户选定的对话框授权目录（导出/日报落盘到桌面）
+      - ~/Library/Application Support/DingTalkBox/ 下的 config / llm_secret.bin / output/
+    -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+
+    <!-- 不需要 JIT（Python 解释执行）+ 不需要 unsigned-executable-memory -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <false/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+</dict>
+</plist>

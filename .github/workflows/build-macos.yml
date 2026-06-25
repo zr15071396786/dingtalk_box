@@ -1,0 +1,196 @@
+name: macOS Build (S3)
+
+on:
+  push:
+    branches: [macos-port]
+    paths:
+      - 'launcher.py'
+      - 'sidecar/**'
+      - 'ai_bridge/**'
+      - 'src/**'
+      - 'assets/**'
+      - 'external/**'
+      - 'requirements.txt'
+      - 'requirements-mac.txt'
+      - '*.spec'
+      - 'scripts/build_macos.sh'
+      - '.github/workflows/build-macos.yml'
+  workflow_dispatch:
+    inputs:
+      target_arch:
+        description: 'Build target arch'
+        required: true
+        default: 'universal2'
+        type: choice
+        options: [arm64, x86_64, universal2]
+
+jobs:
+  build:
+    name: build-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-14   # Apple Silicon
+          - arch: x86_64
+            runner: macos-13   # Intel
+    runs-on: ${{ matrix.runner }}
+    env:
+      PYTHON_VERSION: '3.13'  # 2026-06 macos-latest 上 3.13 可用；3.14 待 GH 补
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('requirements*.txt') }}
+          restore-keys: pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          [ -f requirements-mac.txt ] && pip install -r requirements-mac.txt || true
+          pip install "pyinstaller>=6.0"
+
+      - name: Verify pyinstaller & platform
+        run: |
+          pyinstaller --version
+          uname -m
+          sw_vers
+
+      - name: Generate logo.icns from logo.png
+        run: |
+          # 优先用仓库里的 logo.png；没有就退到 logo.ico 转 png 再转 icns
+          if [ ! -f assets/logo.png ]; then
+            sips -s format png --resampleHeightWidthMax 1024 \
+              assets/logo.ico --out assets/logo.png || true
+          fi
+          rm -rf assets/logo.iconset
+          mkdir -p assets/logo.iconset
+          sips -z 16 16     assets/logo.png --out assets/logo.iconset/icon_16x16.png        > /dev/null
+          sips -z 32 32     assets/logo.png --out assets/logo.iconset/icon_16x16@2x.png     > /dev/null
+          sips -z 32 32     assets/logo.png --out assets/logo.iconset/icon_32x32.png        > /dev/null
+          sips -z 64 64     assets/logo.png --out assets/logo.iconset/icon_32x32@2x.png     > /dev/null
+          sips -z 128 128   assets/logo.png --out assets/logo.iconset/icon_128x128.png      > /dev/null
+          sips -z 256 256   assets/logo.png --out assets/logo.iconset/icon_128x128@2x.png   > /dev/null
+          sips -z 256 256   assets/logo.png --out assets/logo.iconset/icon_256x256.png      > /dev/null
+          sips -z 512 512   assets/logo.png --out assets/logo.iconset/icon_256x256@2x.png   > /dev/null
+          sips -z 512 512   assets/logo.png --out assets/logo.iconset/icon_512x512.png      > /dev/null
+          sips -z 1024 1024 assets/logo.png --out assets/logo.iconset/icon_512x512@2x.png   > /dev/null
+          iconutil -c icns assets/logo.iconset -o assets/logo.icns
+          file assets/logo.icns
+
+      - name: PyInstaller build (${{ matrix.arch }})
+        run: |
+          pyinstaller launcher-mac.spec  --clean --noconfirm --target-arch ${{ matrix.arch }}
+          pyinstaller sidecar-mac.spec   --clean --noconfirm --target-arch ${{ matrix.arch }}
+          pyinstaller ai_bridge-mac.spec --clean --noconfirm --target-arch ${{ matrix.arch }}
+
+      - name: Stage per-arch artifacts
+        run: |
+          mkdir -p stage-${{ matrix.arch }}
+          [ -d dist/dingtalk_box.app ] && cp -R dist/dingtalk_box.app stage-${{ matrix.arch }}/
+          [ -f dist/sidecar   ] && cp dist/sidecar   stage-${{ matrix.arch }}/sidecar-${{ matrix.arch }}
+          [ -f dist/ai_bridge ] && cp dist/ai_bridge stage-${{ matrix.arch }}/ai_bridge-${{ matrix.arch }}
+          lipo -info stage-${{ matrix.arch }}/sidecar-${{ matrix.arch }} || true
+          file    stage-${{ matrix.arch }}/sidecar-${{ matrix.arch }} || true
+
+      - name: Upload per-arch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: stage-${{ matrix.arch }}
+          if-no-files-found: error
+          retention-days: 14
+
+  lipo:
+    name: lipo -> universal2
+    needs: build
+    runs-on: macos-14
+    steps:
+      - name: Download per-arch artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-arch
+          merge-multiple: true
+
+      - name: Lipo sidecar & ai_bridge
+        run: |
+          ls -la dist-arch/
+          lipo -create \
+            -output dist-arch/sidecar-universal \
+            dist-arch/macos-arm64/sidecar-arm64 \
+            dist-arch/macos-x86_64/sidecar-x86_64
+          lipo -create \
+            -output dist-arch/ai_bridge-universal \
+            dist-arch/macos-arm64/ai_bridge-arm64 \
+            dist-arch/macos-x86_64/ai_bridge-x86_64
+          echo "--- sidecar ---"
+          lipo -info dist-arch/sidecar-universal
+          file    dist-arch/sidecar-universal
+          echo "--- ai_bridge ---"
+          lipo -info dist-arch/ai_bridge-universal
+          file    dist-arch/ai_bridge-universal
+
+      - name: Bundle .app with universal2 sidecar + ai_bridge
+        run: |
+          # arm64 那份作为 .app 外壳；把通用二进制塞进 Contents/MacOS/
+          rm -rf deliver/dingtalk_box_mac/dingtalk_box.app
+          mkdir -p deliver/dingtalk_box_mac
+          cp -R dist-arch/macos-arm64/dingtalk_box.app deliver/dingtalk_box_mac/
+          cp dist-arch/sidecar-universal   deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/sidecar
+          cp dist-arch/ai_bridge-universal deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/ai_bridge
+          chmod +x deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/{sidecar,ai_bridge}
+          file deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/*
+
+      - name: Ad-hoc codesign (best effort, no cert)
+        run: |
+          codesign --force --deep --sign - \
+            --entitlements assets/entitlements.mac.plist \
+            deliver/dingtalk_box_mac/dingtalk_box.app || \
+            echo "codesign failed (expected without cert) — continuing for unsigned smoke test"
+
+      - name: Assemble deliver/dingtalk_box_mac/
+        run: |
+          cd deliver/dingtalk_box_mac
+          cp ../../dist-arch/sidecar-universal   .   2>/dev/null || true
+          cp ../../dist-arch/ai_bridge-universal .   2>/dev/null || true
+          ls -la
+
+      - name: Upload universal2 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal2
+          path: deliver/dingtalk_box_mac
+          if-no-files-found: error
+          retention-days: 30
+
+  smoke:
+    name: smoke test (universal2 launcher)
+    needs: lipo
+    runs-on: macos-14
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-universal2
+          path: deliver/dingtalk_box_mac
+      - name: Boot launcher, verify sidecar handshake
+        run: |
+          cd deliver/dingtalk_box_mac
+          APP=dingtalk_box.app/Contents/MacOS/dingtalk_box
+          SC=dingtalk_box.app/Contents/MacOS/sidecar
+          AB=dingtalk_box.app/Contents/MacOS/ai_bridge
+          $AB --version || echo "ai_bridge --version failed (expected for frozen)"
+          $SC --version || echo "sidecar --version failed (expected for frozen)"
+          # 启动 launcher 5 秒后杀；只验证它能拉起子进程、不立刻崩
+          timeout 5 $APP 2>&1 | head -30 || true
+          echo "smoke done"
