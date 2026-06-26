@@ -91,9 +91,11 @@ jobs:
 
       - name: PyInstaller build (${{ matrix.arch }})
         run: |
-          pyinstaller launcher-mac.spec  --clean --noconfirm --target-arch ${{ matrix.arch }}
-          pyinstaller sidecar-mac.spec   --clean --noconfirm --target-arch ${{ matrix.arch }}
-          pyinstaller ai_bridge-mac.spec --clean --noconfirm --target-arch ${{ matrix.arch }}
+          # PyInstaller 6.x 不支持 --target-arch（仅无 spec 的 makespec 模式才用）
+          # 目标架构由 runner 自身决定（arm64 runner → arm64 binary），后续 lipo 合并
+          pyinstaller launcher-mac.spec  --clean --noconfirm
+          pyinstaller sidecar-mac.spec   --clean --noconfirm
+          pyinstaller ai_bridge-mac.spec --clean --noconfirm
 
       - name: Stage per-arch artifacts
         run: |
