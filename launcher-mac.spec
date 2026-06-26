@@ -12,8 +12,8 @@ S3 macOS 端口。
 - 不打包 bin/dws（S2 install.py 首次启动从 GitHub release 下载）
 
 Build:
-    pyinstaller launcher-mac.spec --clean --noconfirm --target-arch arm64
-    # 产物: dist/dingtalk_box.app   (PyInstaller 6+ 自动生成 .app bundle)
+    pyinstaller launcher-mac.spec --clean --noconfirm
+    # 产物: dist/dingtalk_box  (EXE) + dist/dingtalk_box.app  (BUNDLE 包裹)
 
 Build universal2（含子进程 lipo）：见 scripts/build_macos.sh
 """
@@ -140,4 +140,12 @@ exe = EXE(
         'NSLocalNetworkUsageDescription': '钉钉AI助手通过本地网络与 sidecar 子进程通信。',
         'LSApplicationCategoryType': 'public.app-category.productivity',
     },
+)
+
+# 2026-06：补 BUNDLE() 把 EXE 包成 .app（PyInstaller 不会从 EXE 自动生成 .app）
+app = BUNDLE(
+    exe,
+    name='dingtalk_box.app',
+    icon='assets/logo.icns',
+    bundle_identifier='com.internal.dingtalkbox',
 )
