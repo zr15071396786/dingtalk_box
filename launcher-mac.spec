@@ -133,6 +133,11 @@ exe = EXE(
         'CFBundleName': 'dingtalk_box',
         'CFBundleShortVersionString': '0.3.15',
         'CFBundleVersion': '0.3.15',
+        # 2026-06 修复"已损坏"：PyInstaller BUNDLE 经常漏这两个字段
+        # CFBundleSupportedPlatforms 缺 → macOS 15 启动报"damaged"
+        'CFBundleSupportedPlatforms': ['MacOSX'],
+        'CFBundlePackageType': 'APPL',
+        'NSPrincipalClass': 'NSApplication',
         'NSHighResolutionCapable': 'True',
         'NSRequiresAquaSystemAppearance': 'False',
         'LSMinimumSystemVersion': '11.0',

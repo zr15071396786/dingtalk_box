@@ -148,12 +148,16 @@ jobs:
           chmod +x deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/{sidecar,ai_bridge}
           file deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/*
 
-      - name: Ad-hoc codesign (best effort, no cert)
+      - name: Ad-hoc codesign (hardened runtime, best effort, no cert)
         run: |
+          # 2026-06 修复"已损坏"：macOS 15 Sequoia 对 ad-hoc 签名的 .app 默认要 hardened runtime
+          # 缺 --options runtime → 启动报 "damaged" / "已损坏"
           codesign --force --deep --sign - \
+            --options runtime \
             --entitlements assets/entitlements.mac.plist \
             deliver/dingtalk_box_mac/dingtalk_box.app || \
             echo "codesign failed (expected without cert) — continuing for unsigned smoke test"
+          codesign --verify --deep --strict --verbose=2 deliver/dingtalk_box_mac/dingtalk_box.app || true
 
       - name: Stage deliver/dingtalk_box_mac/
         run: |
