@@ -18,11 +18,11 @@ on:
   workflow_dispatch:
     inputs:
       target_arch:
-        description: 'Build target arch'
+        description: 'Build target arch (arm64 only — see build-macos.yml header)'
         required: true
-        default: 'universal2'
+        default: 'arm64'
         type: choice
-        options: [arm64, x86_64, universal2]
+        options: [arm64]
 
 jobs:
   build:
@@ -33,8 +33,8 @@ jobs:
         include:
           - arch: arm64
             runner: macos-14   # Apple Silicon
-          - arch: x86_64
-            runner: macos-13   # Intel
+      # 2026-06: 取消 x86_64 — macos-13 (Intel) runner GitHub 正在淘汰，私有仓库几乎排不到
+      # macOS 用户 99% 是 Apple Silicon，Intel Mac < 5% 且在持续下降，arm64-only 足够
     runs-on: ${{ matrix.runner }}
     env:
       PYTHON_VERSION: '3.13'  # 2026-06 macos-latest 上 3.13 可用；3.14 待 GH 补
@@ -114,43 +114,34 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  lipo:
-    name: lipo -> universal2
+  package:
+    # arm64-only：直接用 build 出来的 arm64 binary 打包（不需 lipo）
+    name: package .app (arm64)
     needs: build
     runs-on: macos-14
     steps:
-      - name: Download per-arch artifacts
+      - name: Download arm64 artifacts
         uses: actions/download-artifact@v4
         with:
+          name: macos-arm64
           path: dist-arch
-          merge-multiple: true
 
-      - name: Lipo sidecar & ai_bridge
+      - name: Verify arm64 binaries
         run: |
           ls -la dist-arch/
-          lipo -create \
-            -output dist-arch/sidecar-universal \
-            dist-arch/macos-arm64/sidecar-arm64 \
-            dist-arch/macos-x86_64/sidecar-x86_64
-          lipo -create \
-            -output dist-arch/ai_bridge-universal \
-            dist-arch/macos-arm64/ai_bridge-arm64 \
-            dist-arch/macos-x86_64/ai_bridge-x86_64
-          echo "--- sidecar ---"
-          lipo -info dist-arch/sidecar-universal
-          file    dist-arch/sidecar-universal
-          echo "--- ai_bridge ---"
-          lipo -info dist-arch/ai_bridge-universal
-          file    dist-arch/ai_bridge-universal
+          file dist-arch/dingtalk_box.app/Contents/MacOS/dingtalk_box
+          file dist-arch/sidecar-arm64
+          file dist-arch/ai_bridge-arm64
+          lipo -info dist-arch/sidecar-arm64
+          lipo -info dist-arch/ai_bridge-arm64
 
-      - name: Bundle .app with universal2 sidecar + ai_bridge
+      - name: Bundle .app with arm64 sidecar + ai_bridge
         run: |
-          # arm64 那份作为 .app 外壳；把通用二进制塞进 Contents/MacOS/
           rm -rf deliver/dingtalk_box_mac/dingtalk_box.app
           mkdir -p deliver/dingtalk_box_mac
-          cp -R dist-arch/macos-arm64/dingtalk_box.app deliver/dingtalk_box_mac/
-          cp dist-arch/sidecar-universal   deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/sidecar
-          cp dist-arch/ai_bridge-universal deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/ai_bridge
+          cp -R dist-arch/dingtalk_box.app deliver/dingtalk_box_mac/
+          cp dist-arch/sidecar-arm64   deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/sidecar
+          cp dist-arch/ai_bridge-arm64 deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/ai_bridge
           chmod +x deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/{sidecar,ai_bridge}
           file deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/*
 
@@ -161,29 +152,29 @@ jobs:
             deliver/dingtalk_box_mac/dingtalk_box.app || \
             echo "codesign failed (expected without cert) — continuing for unsigned smoke test"
 
-      - name: Assemble deliver/dingtalk_box_mac/
+      - name: Stage deliver/dingtalk_box_mac/
         run: |
           cd deliver/dingtalk_box_mac
-          cp ../../dist-arch/sidecar-universal   .   2>/dev/null || true
-          cp ../../dist-arch/ai_bridge-universal .   2>/dev/null || true
+          cp ../../dist-arch/sidecar-arm64   .  2>/dev/null || true
+          cp ../../dist-arch/ai_bridge-arm64 .  2>/dev/null || true
           ls -la
 
-      - name: Upload universal2 artifact
+      - name: Upload arm64 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-universal2
+          name: macos-arm64
           path: deliver/dingtalk_box_mac
           if-no-files-found: error
           retention-days: 30
 
   smoke:
-    name: smoke test (universal2 launcher)
-    needs: lipo
+    name: smoke test (arm64 launcher)
+    needs: package
     runs-on: macos-14
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: macos-universal2
+          name: macos-arm64
           path: deliver/dingtalk_box_mac
       - name: Boot launcher, verify sidecar handshake
         run: |
