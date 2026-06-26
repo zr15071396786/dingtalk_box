@@ -142,6 +142,9 @@ jobs:
           cp -R dist-arch/dingtalk_box.app deliver/dingtalk_box_mac/
           cp dist-arch/sidecar-arm64   deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/sidecar
           cp dist-arch/ai_bridge-arm64 deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/ai_bridge
+          # GitHub Actions upload-artifact 会丢 Unix exec 位；下载后必须显式补
+          # 不补的话 launch 报 "zsh: permission denied"
+          chmod +x deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/dingtalk_box
           chmod +x deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/{sidecar,ai_bridge}
           file deliver/dingtalk_box_mac/dingtalk_box.app/Contents/MacOS/*
 
