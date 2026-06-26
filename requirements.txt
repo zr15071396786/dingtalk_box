@@ -8,3 +8,4 @@ cryptography>=41.0.0
 # macOS 端口（S1）：Mac 端用 Keychain 保护用户 LLM key（keyring 库 + macOS 后端）
 # Windows 端不会 import 它（dpapi.py 平台分发），但装上无副作用
 keyring>=24.0
+# 2026-06-26 11:12:55
