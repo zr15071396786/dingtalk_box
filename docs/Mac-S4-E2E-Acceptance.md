@@ -245,3 +245,4 @@ open deliver/dingtalk_box_mac/dingtalk_box.app
 rm -rf "$HOME/Library/Application Support/DingTalkBox/"
 rm -rf deliver/dingtalk_box_mac/
 ```
+<!-- trigger: 2026-06-26 11:09:16 -->
